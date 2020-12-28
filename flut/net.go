@@ -11,14 +11,21 @@ import (
 // bombAddress writes the given message via plain TCP to the given address,
 // forever, as fast as possible.
 func bombAddress(message []byte, address string) {
-	conn, err := net.Dial("tcp", address)
-	if err != nil {
-		log.Println("bomb-error")
-		log.Fatal(err)
-	}
-	defer conn.Close()
+	i := 0
+	for {
+		conn, err := net.Dial("tcp", address)
+		if err != nil {
+			log.Println("bomb-error")
+			i++
+			if i >= 10 {
+				log.Fatalf("dial failed after 10 retries, too many connections?")
+			}
+			continue
+		}
 
-	bombConn(message, conn)
+		bombConn(message, conn)
+		conn.Close()
+	}
 }
 
 func bombConn(message []byte, conn net.Conn) {
@@ -26,7 +33,7 @@ func bombConn(message []byte, conn net.Conn) {
 		_, err := conn.Write(message)
 		if err != nil {
 			log.Println("conn-err")
-			log.Fatal(err)
+			break
 		}
 	}
 }
